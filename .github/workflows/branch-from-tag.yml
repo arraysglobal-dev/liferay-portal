@@ -8,7 +8,7 @@ jobs:
     steps:
       - name: Create branch from upstream tag
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           set -euo pipefail
           TAG="7.4.3.132-ga132"
