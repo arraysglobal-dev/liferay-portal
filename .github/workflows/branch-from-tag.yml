@@ -1,16 +1,34 @@
 name: Branch from upstream tag
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   create-branch:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: |
-          git remote add upstream https://github.com/liferay/liferay-portal.git
-          git fetch upstream tag 7.4.3.132-ga132 --no-tags
-          git branch u132-ce 7.4.3.132-ga132
-          git push origin u132-ce
+      - name: Create branch from upstream tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="7.4.3.132-ga132"
+          NEW_BRANCH="u132-ce"
+          UPSTREAM="liferay/liferay-portal"
+          FORK="${{ github.repository }}"
+
+          ref_json=$(gh api "repos/$UPSTREAM/git/ref/tags/$TAG")
+          obj_type=$(echo "$ref_json" | jq -r '.object.type')
+          obj_sha=$(echo "$ref_json"  | jq -r '.object.sha')
+
+          # annotated tags point to a tag object; dereference to the commit
+          if [ "$obj_type" = "tag" ]; then
+            commit_sha=$(gh api "repos/$UPSTREAM/git/tags/$obj_sha" --jq '.object.sha')
+          else
+            commit_sha="$obj_sha"
+          fi
+          echo "Tag $TAG -> commit $commit_sha"
+
+          gh api -X POST "repos/$FORK/git/refs" \
+            -f ref="refs/heads/$NEW_BRANCH" \
+            -f sha="$commit_sha"
+          echo "Created branch $NEW_BRANCH"
