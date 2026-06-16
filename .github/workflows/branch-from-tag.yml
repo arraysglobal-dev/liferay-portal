@@ -1,0 +1,16 @@
+name: Branch from upstream tag
+on: workflow_dispatch
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          git remote add upstream https://github.com/liferay/liferay-portal.git
+          git fetch upstream tag 7.4.3.132-ga132 --no-tags
+          git branch u132-ce 7.4.3.132-ga132
+          git push origin u132-ce
